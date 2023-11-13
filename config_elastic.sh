@@ -76,6 +76,9 @@ if [ -f $config_path ]; then
     # echo $hosts
     sed -i 's/#discovery.zen.ping.unicast.hosts:/discovery.zen.ping.unicast.hosts:/' $config_path
     sed -i "s/discovery.zen.ping.unicast.hosts: .*/discovery.zen.ping.unicast.hosts: $hosts/" $config_path
+    # discovery.zen.minimum_master_nodes
+    sed -i 's/#discovery.zen.minimum_master_nodes:/discovery.zen.minimum_master_nodes:/' $config_path
+    sed -i "s/discovery.zen.minimum_master_nodes: .*/discovery.zen.minimum_master_nodes: 3/" $config_path
     echo "$cors_config" >> $config_path
     echo "Config file updated"
 else
