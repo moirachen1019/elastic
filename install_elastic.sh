@@ -129,9 +129,9 @@ config_path="/etc/elasticsearch/jvm.options"
 
 if [ -f $config_path ]; then
     # -Xms
-    sed -i 's/-Xms[0-9]g/-Xms'$heap'g/' $config_path
+    sed -i 's/-Xms[0-9]\+g/-Xms'$heap'g/' $config_path
     # -Xmx
-    sed -i 's/-Xmx[0-9]g/-Xmx'$heap'g/' $config_path
+    sed -i 's/-Xmx[0-9]\+g/-Xmx'$heap'g/' $config_path
     echo "jvm.options file updated"
 else
     echo "jvm.options file not found"
