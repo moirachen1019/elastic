@@ -58,7 +58,6 @@ done
 # Check if all required arguments are provided
 if [ -z "$cluster_name" ] || [ -z "$node_name" ]; then
   echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --m <1/0: is master eligible> --heap <heap_memory_size> "
-  # --c cc --n nn --min 1 --m 1 --heap 4 --h 1.0.0.0
   exit 1
 fi
 
