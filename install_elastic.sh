@@ -5,29 +5,46 @@ if [[ $(id -u) -ne 0 ]]; then
   exit 1
 fi
 
-ip_address=$(ip route get 8.8.8.8 | awk '{print $7}')
-hosts="[\"$ip_address\"]" # Default hosts with the current IP address
+ip_address=$(ifconfig ens34 | grep 'inet ' | awk '{print $2}')
+
 # parse command-line arguments
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-    --cluster_name)
+    --c)
       cluster_name="$2"
       shift
       shift
       ;;
-    --node_name)
+    --n)
       node_name="$2"
       shift
       shift
       ;;
-    --hosts)
+    --min)
+      min_master="$2"
       shift
-      hosts="[\"$ip_address\""
+      shift
+      ;;
+    --m)
+      master_eligible="$2"
+      shift
+      shift
+      ;;
+    --heap)
+      heap="$2"
+      shift
+      shift
+      ;;
+    --h)
+      hosts="["
       shift
       while [[ $# -gt 0 ]]; do
-        hosts="$hosts, \"$1\""
+        hosts="$hosts\"$1\""
         shift
+        if [[ $# -gt 0 ]]; then
+          hosts="$hosts,"
+        fi
       done
       hosts="$hosts]"
       ;;
@@ -40,9 +57,14 @@ done
 
 # Check if all required arguments are provided
 if [ -z "$cluster_name" ] || [ -z "$node_name" ]; then
-  echo "Usage: $0 --cluster_name <cluster_name> --node_name <node_name> --hosts [host ip]..."
+  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --m <1/0: is master eligible> --heap <heap_memory_size> "
   exit 1
 fi
+
+echo "Cluster Name: $cluster_name"
+echo "Node Name: $node_name"
+echo "IP: $ip_address"
+echo "Hosts: $hosts"
 
 # install elasticsearch 6.8.23
 apt update
@@ -56,10 +78,10 @@ systemctl start elasticsearch.service
 systemctl status elasticsearch.service
 echo "Waiting for ElasticSearch to boot up..."
 sleep 20
-# curl -XGET "127.0.0.1:9200/?pretty"
+curl -XGET "127.0.0.1:9200/?pretty"
 
-# configure elasticsearch
-echo "Starting to configure elasticsearch..."
+# configure elasticsearch.yml
+echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
 cors_config='
 http.cors.allow-origin: "*"
@@ -77,8 +99,11 @@ if [ -f $config_path ]; then
     sed -i 's/#node.name:/node.name:/' $config_path
     sed -i "s/node.name: .*/node.name: $node_name/" $config_path
     # node.master
-    sed -i 's/#node.master:/node.master:/' $config_path
-    sed -i "s/node.master: .*/node.master: true/" $config_path
+    if  [ -z "$master_eligible" ]; then
+      echo "hihi"
+      # sed -i 's/#node.master:/node.master:/' $config_path
+      # sed -i "s/node.master: .*/node.master: true/" $config_path
+    fi
     # network.host
     sed -i 's/#network.host:/network.host:/' $config_path
     sed -i "s/network.host: .*/network.host: $ip_address/" $config_path
@@ -86,11 +111,27 @@ if [ -f $config_path ]; then
     sed -i 's/#http.port:/http.port:/' $config_path
     sed -i "s/http.port: .*/http.port: 9200/" $config_path 
     # discovery.zen.ping.unicast.hosts
-    # echo $hosts
     sed -i 's/#discovery.zen.ping.unicast.hosts:/discovery.zen.ping.unicast.hosts:/' $config_path
     sed -i "s/discovery.zen.ping.unicast.hosts: .*/discovery.zen.ping.unicast.hosts: $hosts/" $config_path
     echo "$cors_config" >> $config_path
-    echo "Config file updated"
+    # discovery.zen.minimum_master_nodes
+    sed -i 's/#discovery.zen.minimum_master_nodes:/discovery.zen.minimum_master_nodes:/' $config_path
+    sed -i "s/discovery.zen.minimum_master_nodes: .*/discovery.zen.minimum_master_nodes: $min_master/" $config_path
+    echo "elasticsearch.yml file updated"
 else
     echo "elasticsearch.yml file not found"
+fi
+
+# configure jvm.options
+echo "Starting to configure jvm.options..."
+config_path="/etc/elasticsearch/jvm.options"
+
+if [ -f $config_path ]; then
+    # -Xms
+    sed -i 's/-Xms[0-9]\+g/-Xms'$heap'g/' $config_path
+    # -Xmx
+    sed -i 's/-Xmx[0-9]\+g/-Xmx'$heap'g/' $config_path
+    echo "jvm.options file updated"
+else
+    echo "jvm.options file not found"
 fi
