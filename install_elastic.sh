@@ -99,10 +99,8 @@ if [ -f $config_path ]; then
     sed -i 's/#node.name:/node.name:/' $config_path
     sed -i "s/node.name: .*/node.name: $node_name/" $config_path
     # node.master
-    if  [ -z "$master_eligible" ]; then
-      echo "hihi"
-      # sed -i 's/#node.master:/node.master:/' $config_path
-      # sed -i "s/node.master: .*/node.master: true/" $config_path
+    if [ "$master_eligible" -eq 1 ]; then
+      echo "node.master: true" >> "$config_path"
     fi
     # network.host
     sed -i 's/#network.host:/network.host:/' $config_path
