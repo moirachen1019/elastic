@@ -5,7 +5,7 @@ if [[ $(id -u) -ne 0 ]]; then
   exit 1
 fi
 
-ip_address=$(ip route get 8.8.8.8 | awk '{print $7}')
+ip_address=$(ifconfig ens34 | grep 'inet ' | awk '{print $2}')
 
 # parse command-line arguments
 while [[ $# -gt 0 ]]; do
@@ -80,7 +80,7 @@ echo "Waiting for ElasticSearch to boot up..."
 sleep 20
 curl -XGET "127.0.0.1:9200/?pretty"
 
-configure elasticsearch.yml
+# configure elasticsearch.yml
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
 cors_config='
@@ -99,8 +99,11 @@ if [ -f $config_path ]; then
     sed -i 's/#node.name:/node.name:/' $config_path
     sed -i "s/node.name: .*/node.name: $node_name/" $config_path
     # node.master
-    sed -i 's/#node.master:/node.master:/' $config_path
-    sed -i "s/node.master: .*/node.master: true/" $config_path
+    if  [ -z "$master_eligible" ]; then
+      echo "hihi"
+      # sed -i 's/#node.master:/node.master:/' $config_path
+      # sed -i "s/node.master: .*/node.master: true/" $config_path
+    fi
     # network.host
     sed -i 's/#network.host:/network.host:/' $config_path
     sed -i "s/network.host: .*/network.host: $ip_address/" $config_path
@@ -111,10 +114,6 @@ if [ -f $config_path ]; then
     sed -i 's/#discovery.zen.ping.unicast.hosts:/discovery.zen.ping.unicast.hosts:/' $config_path
     sed -i "s/discovery.zen.ping.unicast.hosts: .*/discovery.zen.ping.unicast.hosts: $hosts/" $config_path
     echo "$cors_config" >> $config_path
-    # master_eligible
-    if [ -z "$master_eligible" ]; then
-      echo "node.master: true" >> $config_path
-    fi
     # discovery.zen.minimum_master_nodes
     sed -i 's/#discovery.zen.minimum_master_nodes:/discovery.zen.minimum_master_nodes:/' $config_path
     sed -i "s/discovery.zen.minimum_master_nodes: .*/discovery.zen.minimum_master_nodes: $min_master/" $config_path
