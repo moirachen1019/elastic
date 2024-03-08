@@ -26,8 +26,13 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    --m)
+    --master_eligible)
       master_eligible="$2"
+      shift
+      shift
+      ;;
+    --client_node)
+      client_node="$2"
       shift
       shift
       ;;
@@ -57,7 +62,7 @@ done
 
 # Check if all required arguments are provided
 if [ -z "$cluster_name" ] || [ -z "$node_name" ]; then
-  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --m <1/0: is master eligible> --heap <heap_memory_size> "
+  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --master_eligible <1/0: is master eligible> --client_node <1/0: is client node> --heap <heap_memory_size> "
   exit 1
 fi
 
@@ -102,7 +107,10 @@ if [ -f $config_path ]; then
     if [ "$master_eligible" -eq 0 ]; then
       echo "node.master: false" >> "$config_path"
     fi
-    # network.host
+    # client node
+    if [ "$client_node" -eq 1 ]; then
+      echo "node.data: false" >> "$config_path"
+    fi    # network.host
     sed -i 's/#network.host:/network.host:/' $config_path
     sed -i "s/network.host: .*/network.host: $ip_address/" $config_path
     # http.port
