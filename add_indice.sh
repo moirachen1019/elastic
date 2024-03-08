@@ -19,8 +19,8 @@
 #   "field2": "yo"
 # }'
 
-curl -X POST "http://angel.ed.de:9200/*/_delete_by_query?pretty" -H "Content-Type: application/json" -d '{
-  "query": {
-    "match_all": {}
-  }
-}'
+# curl -X POST "http://angel.ed.de:9200/*/_delete_by_query?pretty" -H "Content-Type: application/json" -d '{
+#   "query": {
+#     "match_all": {}
+#   }
+# }'
