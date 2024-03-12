@@ -141,3 +141,6 @@ if [ -f $config_path ]; then
 else
     echo "jvm.options file not found"
 fi
+
+# restart elasticsearch
+systemctl restart elasticsearch.service
