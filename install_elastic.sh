@@ -1,5 +1,11 @@
 #! /usr/bin/env bash
 
+# check root privileges
+if [[ $(id -u) -ne 0 ]]; then
+  echo "Please run the script with sudo or as root."
+  exit 1
+fi
+
 # install elasticsearch 6.8.23
 apt update
 apt install -y apt-transport-https openjdk-8-jre-headless
@@ -12,3 +18,4 @@ systemctl start elasticsearch.service
 systemctl status elasticsearch.service
 echo "Waiting for ElasticSearch to boot up..."
 sleep 20
+curl -X GET "localhost:9200/_cat/health?v"

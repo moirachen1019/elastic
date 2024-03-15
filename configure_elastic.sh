@@ -7,7 +7,6 @@ fi
 
 ip_address=$(ifconfig ens34 | grep 'inet ' | awk '{print $2}')
 
-
 # parse command-line arguments
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -74,7 +73,8 @@ echo "Hosts: $hosts"
 
 # configure elasticsearch.yml
 echo "Starting to configure elasticsearch.yml..."
-config_path="/etc/elasticsearch/elasticsearch.yml"
+config_path="test.yml"
+data_path="/mnt/hdd/elasticsearch"
 cors_config='
 http.cors.allow-origin: "*"
 http.cors.enabled: true
@@ -90,6 +90,8 @@ if [ -f $config_path ]; then
     # node.name
     sed -i 's/#node.name:/node.name:/' $config_path
     sed -i "s/node.name: .*/node.name: $node_name/" $config_path
+    # path.data
+    sed -i "s|^path.data:.*|path.data: $data_path|" $config_path
     # node.master
     if [ "$master_eligible" -eq 0 ]; then
       echo "node.master: false" >> "$config_path"
