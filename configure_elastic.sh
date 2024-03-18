@@ -73,7 +73,7 @@ echo "Hosts: $hosts"
 
 # configure elasticsearch.yml
 echo "Starting to configure elasticsearch.yml..."
-config_path="test.yml"
+config_path="/etc/elasticsearch/elasticsearch.yml"
 data_path="/mnt/hdd/elasticsearch"
 cors_config='
 http.cors.allow-origin: "*"
