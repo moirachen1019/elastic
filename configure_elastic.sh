@@ -71,7 +71,16 @@ echo "Node Name: $node_name"
 echo "IP: $ip_address"
 echo "Hosts: $hosts"
 
-# configure elasticsearch.yml
+# configure limits.conf & elasticsearch.service
+echo "Starting to configure /etc/security/limits.conf & /usr/lib/systemd/system/elasticsearch.service"
+
+security_config="/etc/security/limits.conf"
+echo 'elasticsearch soft memlock unlimited' | sudo tee -a $security_config
+echo 'elasticsearch hard memlock unlimited' | sudo tee -a $security_config
+
+system_config="/usr/lib/systemd/system/elasticsearch.service"
+sed -i 's/#bootstrap.memory_lock=true/bootstrap.memory_lock=true/' $system_config
+
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
 data_path="/mnt/hdd/elasticsearch"
@@ -112,6 +121,8 @@ if [ -f $config_path ]; then
     # discovery.zen.minimum_master_nodes
     sed -i 's/#discovery.zen.minimum_master_nodes:/discovery.zen.minimum_master_nodes:/' $config_path
     sed -i "s/discovery.zen.minimum_master_nodes: .*/discovery.zen.minimum_master_nodes: $min_master/" $config_path
+    # /usr/lib/systemd/system/elasticsearch.service
+    sed -i 's/#bootstrap.memory_lock: true/bootstrap.memory_lock: true/' $config_path
     echo "elasticsearch.yml file updated"
 else
     echo "elasticsearch.yml file not found"
