@@ -62,7 +62,7 @@ done
 
 # Check if all required arguments are provided
 if [ -z "$cluster_name" ] || [ -z "$node_name" ]; then
-  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --master_eligible <1/0: is master eligible> --client_node <1/0: is client node> --heap <heap_memory_size> "
+  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --master_eligible <1/0: is master eligible> --client_node <1/0: is client node> --heap <heap_memory_size> --h host_list"
   exit 1
 fi
 
@@ -72,14 +72,20 @@ echo "IP: $ip_address"
 echo "Hosts: $hosts"
 
 # configure limits.conf & elasticsearch.service
-echo "Starting to configure /etc/security/limits.conf & /usr/lib/systemd/system/elasticsearch.service"
-
+echo "Starting to configure limits.conf & elasticsearch.service"
 security_config="/etc/security/limits.conf"
-echo 'elasticsearch soft memlock unlimited' | sudo tee -a $security_config
-echo 'elasticsearch hard memlock unlimited' | sudo tee -a $security_config
+content1='elasticsearch soft memlock unlimited'
+content2='elasticsearch hard memlock unlimited'
+if grep -q "$content1" "$security_config" && grep -q "$content2" "$security_config"; then
+    echo "Content already exists in $security_config"
+else
+    echo "$content1" >> "$security_config"
+    echo "$content2" >> "$security_config"
+    echo "Content added to $security_config"
+fi
 
 system_config="/usr/lib/systemd/system/elasticsearch.service"
-sed -i 's/#bootstrap.memory_lock=true/bootstrap.memory_lock=true/' $system_config
+sed -i '/StandardError=inherit/a\LimitMEMLOCK=infinity' $system_config
 
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
@@ -102,13 +108,20 @@ if [ -f $config_path ]; then
     # path.data
     sed -i "s|^path.data:.*|path.data: $data_path|" $config_path
     # node.master
-    if [ "$master_eligible" -eq 0 ]; then
-      echo "node.master: false" >> "$config_path"
+    node_master='node.master: false'
+    if grep -q "$node_master" "$config_path" && [ "$master_eligible" -eq 0 ]; then
+        echo "'node.master: false' already exists in $config_path and master_eligible condition is met"
+    elif [ "$master_eligible" -eq 0 ]; then
+        echo "$node_master" >> "$config_path"
     fi
     # client node
-    if [ "$client_node" -eq 1 ]; then
+    node_data='node.data: false'
+    if grep -q "$node_data" "$config_path" && [ "$client_node" -eq 1 ]; then
+        echo "'node.data: false' already exists in $config_path and client_node condition is met"
+    elif [ "$client_node" -eq 1 ]; then
       echo "node.data: false" >> "$config_path"
-    fi    # network.host
+    fi
+    # network.host
     sed -i 's/#network.host:/network.host:/' $config_path
     sed -i "s/network.host: .*/network.host: $ip_address/" $config_path
     # http.port
@@ -117,7 +130,12 @@ if [ -f $config_path ]; then
     # discovery.zen.ping.unicast.hosts
     sed -i 's/#discovery.zen.ping.unicast.hosts:/discovery.zen.ping.unicast.hosts:/' $config_path
     sed -i "s/discovery.zen.ping.unicast.hosts: .*/discovery.zen.ping.unicast.hosts: $hosts/" $config_path
-    echo "$cors_config" >> $config_path
+    # cors_config
+    if grep -q "$cors_config" "$config_path"; then
+        echo "CORS configuration already exists in $config_path"
+    else
+        echo "$cors_config" >> "$config_path"
+    fi
     # discovery.zen.minimum_master_nodes
     sed -i 's/#discovery.zen.minimum_master_nodes:/discovery.zen.minimum_master_nodes:/' $config_path
     sed -i "s/discovery.zen.minimum_master_nodes: .*/discovery.zen.minimum_master_nodes: $min_master/" $config_path
@@ -143,4 +161,5 @@ else
 fi
 
 # restart elasticsearch
+systemctl daemon-reload
 systemctl restart elasticsearch.service
