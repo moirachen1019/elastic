@@ -94,8 +94,7 @@ if grep -q "LimitMEMLOCK=infinity" "$system_config"; then
     echo "LimitMEMLOCK=infinity already exists in $system_config"
 else
     sed -i '/StandardError=inherit/a\LimitMEMLOCK=infinity' "$system_config"
-
-if
+fi
 
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
@@ -119,15 +118,23 @@ if [ -f $config_path ]; then
     sed -i "s|^path.data:.*|path.data: $data_path|" $config_path
     # node.master
     node_master='node.master: false'
-    if grep -q "$node_master" "$config_path" && [ "$master_eligible" -eq 0 ]; then
+    if grep -q "$node_master" "$config_path"; then
+      if [ "$master_eligible" -eq 0 ]; then
         echo "'node.master: false' already exists in $config_path and master_eligible condition is met"
+      else 
+        sed -i "/$node_master/d" "$config_path"
+      fi
     elif [ "$master_eligible" -eq 0 ]; then
         echo "$node_master" >> "$config_path"
     fi
     # client node
     node_data='node.data: false'
-    if grep -q "$node_data" "$config_path" && [ "$client_node" -eq 1 ]; then
+    if grep -q "$node_data" "$config_path"; then
+      if  [ "$client_node" -eq 1 ]; then
         echo "'node.data: false' already exists in $config_path and client_node condition is met"
+      else
+        sed -i "/$node_data/d" "$config_path"
+      fi
     elif [ "$client_node" -eq 1 ]; then
       echo "node.data: false" >> "$config_path"
     fi
