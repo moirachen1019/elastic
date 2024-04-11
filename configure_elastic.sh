@@ -85,7 +85,9 @@ else
 fi
 
 system_config="/usr/lib/systemd/system/elasticsearch.service"
-sed -i '/StandardError=inherit/a\LimitMEMLOCK=infinity' $system_config
+if ! grep -q "LimitMEMLOCK=infinity" "$system_config"; then
+    sed -i '/StandardError=inherit/a\LimitMEMLOCK=infinity' "$system_config"
+fi
 
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
