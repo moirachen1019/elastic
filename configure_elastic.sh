@@ -90,9 +90,12 @@ else
 fi
 
 system_config="/usr/lib/systemd/system/elasticsearch.service"
-if ! grep -q "LimitMEMLOCK=infinity" "$system_config"; then
+if grep -q "LimitMEMLOCK=infinity" "$system_config"; then
+    echo "LimitMEMLOCK=infinity already exists in $system_config"
+else
     sed -i '/StandardError=inherit/a\LimitMEMLOCK=infinity' "$system_config"
-fi
+
+if
 
 echo "Starting to configure elasticsearch.yml..."
 config_path="/etc/elasticsearch/elasticsearch.yml"
@@ -138,7 +141,7 @@ if [ -f $config_path ]; then
     sed -i 's/#discovery.zen.ping.unicast.hosts:/discovery.zen.ping.unicast.hosts:/' $config_path
     sed -i "s/discovery.zen.ping.unicast.hosts: .*/discovery.zen.ping.unicast.hosts: $hosts/" $config_path
     # cors_config
-    if grep -q "$cors_config" "$config_path"; then
+    if grep -q "http.cors.allow-origin:" "$config_path"; then
         echo "CORS configuration already exists in $config_path"
     else
         echo "$cors_config" >> "$config_path"
