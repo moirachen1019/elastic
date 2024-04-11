@@ -41,6 +41,11 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --ip)
+      ip_address="$2"
+      shift
+      shift
+      ;;
     --h)
       hosts="["
       shift
@@ -57,17 +62,12 @@ while [[ $# -gt 0 ]]; do
       echo "Invalid option: $1"
       exit 1
       ;;
-    --ip)
-      ip_address="$2"
-      shift
-      shift
-      ;;
   esac
 done
 
 # Check if all required arguments are provided
 if [ -z "$cluster_name" ] || [ -z "$node_name" ]; then
-  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --master_eligible <1/0: is master eligible> --client_node <1/0: is client node> --heap <heap_memory_size> --h host_list --ip ip(optional)"
+  echo "Usage: $0 --c <cluster_name> --n <node_name> --min <min_master_node_number> --master_eligible <1/0: is master eligible> --client_node <1/0: is client node> --heap <heap_memory_size> --ip ip(optional) --h host_list"
   exit 1
 fi
 
